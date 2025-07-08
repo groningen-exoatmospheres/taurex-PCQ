@@ -47,7 +47,7 @@ class PyMieScattGridExtinctionContribution(Contribution):
                  mie_resolution = 100,
                  mie_particle_altitude_distrib = 'exp_decay',
                  mie_particle_altitude_decay = [-5], ## Controls the decay rate, inspired by Whitten et al. 2008 / Attreya et al. 2005
-                 name = 'PME'):
+                 name = 'PyMieScattGridExtinction'):
         super().__init__(name)
 
         self._mie_particle_mean_radius = mie_particle_mean_radius
