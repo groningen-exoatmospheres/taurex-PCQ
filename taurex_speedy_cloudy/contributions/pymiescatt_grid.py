@@ -41,6 +41,7 @@ class PyMieScattGridExtinctionContribution(Contribution):
                  mie_particle_radius_distribution = 'normal', ## choices are 'normal', 'budaj', 'deirmendjian'.
                  mie_species_path=None, species = ['Mg2SiO4'], file_extension = '.h5',
                  mie_particle_mix_ratio=[1e-10], 
+                mie_porosity = None,
                  mie_midP = [1e3],
                  mie_rangeP = [1],
                  mie_nMedium=1, 
@@ -71,6 +72,8 @@ class PyMieScattGridExtinctionContribution(Contribution):
         self._mie_particle_radius_distribution = mie_particle_radius_distribution
 
         self._mie_particle_mix_ratio = mie_particle_mix_ratio
+        self._mie_porosity = mie_porosity
+
         self._mie_midP = mie_midP
         self._mie_rangeP = mie_rangeP
 
@@ -87,7 +90,7 @@ class PyMieScattGridExtinctionContribution(Contribution):
 
         self._resolution = mie_resolution
 
-        self._radius_grid, self._Qext, _ = self.load_input_files(self._mie_species_path, 
+        self._radius_grid, self._Qext, self._Qext_wn,  _ = self.load_input_files(self._mie_species_path, 
                                                 self._species)
         
         self.generate_particle_fitting_params()
@@ -108,6 +111,7 @@ class PyMieScattGridExtinctionContribution(Contribution):
         Loads the input files for the PyMieScatt contribution Qext and matching radius. only work for a single molecule at the moment.
         """
         paths = []
+        radius_grids, Qexts, wavenumber_grids = [], [], []
         for specie in species:  
             file_path = path+'/'+specie+extension
             Qext_grid = h5py.File(file_path)
@@ -117,11 +121,13 @@ class PyMieScattGridExtinctionContribution(Contribution):
             #wls = 1e4 / Qext_grid["wavenumber_grid"][()]
             #order = np.argsort(wls)
 
-            radius_grid = Qext_grid["radius_grid"][()]
-            Qext = Qext_grid["Qext"][()]
+            radius_grids.append( Qext_grid["radius_grid"][()] )
+            Qexts.append( Qext_grid["Qext"][()] )
+            wavenumber_grids.append( Qext_grid["wavenumber_grid"][()] )
+
             Qext_grid.close()
             
-        return radius_grid, Qext, paths
+        return radius_grids, Qexts, wavenumber_grids, paths
 
     def contribute(self, model, start_layer, end_layer,
                    density_offset, layer, density, tau, path_length=None):
@@ -283,25 +289,14 @@ class PyMieScattGridExtinctionContribution(Contribution):
         self._ngrid = wngrid.shape[0]
 
         pressure_profile = model.pressureProfile
-
-        wltmp = 10000/wngrid
         
         sigma_xsec = np.zeros(shape=(self._nlayers, wngrid.shape[0]))
 
-        wlmin = np.min([np.min(w) for w in self._wls])
-        wlmax = np.max([np.max(w) for w in self._wls])
-
-        wlres = create_grid_res(self._resolution, wlmin, wlmax)
-        self.wlres = wlres
-        cindexes = [np.interp(wlres[:,0], self._wls[i], self._cindexes[i], left=0, right=0) for i in range(len(self._cindexes))]
 
         for idx, s in enumerate(self._species):
-            wl = self._wls[idx]
-            mask = (wl >= np.min(wltmp)) & (wl <= np.max(wltmp))
-            cindex = cindexes[idx]
+            wn = self._Qext_wn[idx]
             Rmean = self._mie_particle_mean_radius[idx]
-            
-            wl = wlres[:,0] #### THIS HAS TO BE INTERPOLATED!
+        
             
             ## GET A LOG DISTRIBUTION OF THE PARTICLE RADIUS
 
@@ -322,21 +317,26 @@ class PyMieScattGridExtinctionContribution(Contribution):
                 weights = stats.norm.pdf(np.log10(radii_log), np.log10(Rmean), LogRsigma)
             Qexts = []
             
-            closest_indices = [np.abs(self._radius_grid - r).argmin() for r in radii_log]
-            radii_log  = self._radius_grid[closest_indices]
-            Qexts_array  = self._Qext[closest_indices] * np.power(radii_log,2)
+            closest_indices = [np.abs(self._radius_grid[idx] - r).argmin() for r in radii_log]
+            radii_log  = self._radius_grid[idx][closest_indices]
+            #Qexts_array  = self._Qext[closest_indices] * np.power(radii_log,2)
+            Qexts  = self._Qext[idx][closest_indices] * np.power(radii_log[:, np.newaxis], 2)
 
-            for Qext_indiv, radius_indiv in zip(Qexts_array, radii_log):
-                Qexts.append(Qext_indiv * np.pow(radius_indiv, 2))
+            #for Qext_indiv, radius_indiv in zip(Qexts_array, radii_log):
+                #Qexts.append(Qext_indiv * np.pow(radius_indiv, 2))
+            
+            
+            Qext_mean = np.average(np.array(Qexts), axis=0, weights=weights)
+            Qext_int = np.interp(wngrid, wn[::-1], Qext_mean, left=0, right=0)
+            Qext_int = Qext_int[::-1]
+            sigma_mie = np.zeros((len(wngrid)))
             
 
-            Qext_mean = np.average(np.array(Qexts), axis=0, weights=weights)
-            Qext_int = np.interp(wltmp[::-1], wl, Qext_mean, left=0, right=0)
-            Qext_int = Qext_int[::-1]
-            sigma_mie = np.zeros((len(wltmp)))
 
             sigma_mie[Qext_int!=0] = Qext_int[Qext_int!=0]* np.pi * 1e-18
             ## So here sigma_mie is in m2 (nm2 to m2 conversion is 1e-18)
+            
+            np.savetxt("/Users/mv277622/Desktop/SpeedClouds/Qext_avg.dat", np.array([wngrid, Qext_int]).T, header='wavenumber (cm-1) Qext (m2)')
 
             if self._mie_midP[idx] == -1:
                 bottom_pressure = pressure_profile[0]
