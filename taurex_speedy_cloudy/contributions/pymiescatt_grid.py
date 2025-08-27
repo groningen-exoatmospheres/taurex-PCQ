@@ -41,7 +41,7 @@ class PyMieScattGridExtinctionContribution(Contribution):
                  mie_particle_radius_distribution = 'normal', ## choices are 'normal', 'budaj', 'deirmendjian'.
                  mie_species_path=None, species = ['Mg2SiO4'], file_extension = '.h5',
                  mie_particle_mix_ratio=[1e-10], 
-                mie_porosity = None,
+                 mie_porosity = None,
                  mie_midP = [1e3],
                  mie_rangeP = [1],
                  mie_nMedium=1, 
@@ -89,9 +89,10 @@ class PyMieScattGridExtinctionContribution(Contribution):
         self._mie_nMedium = mie_nMedium
 
         self._resolution = mie_resolution
-
+        self.warning('GOING TO GO INTO LOADINT FONCTION')
         self._radius_grid, self._Qext, self._Qext_wn,  _ = self.load_input_files(self._mie_species_path, 
                                                 self._species)
+        self.warning('FILES LOADED')
         
         self.generate_particle_fitting_params()
 
@@ -114,18 +115,25 @@ class PyMieScattGridExtinctionContribution(Contribution):
         radius_grids, Qexts, wavenumber_grids = [], [], []
         for specie in species:  
             file_path = path+'/'+specie+extension
+            self.warning(f'LOADING FILE {file_path} ...')
             Qext_grid = h5py.File(file_path)
+            self.warning(f'FILE {file_path} LOADED')
 
             paths.append(file_path)
             
             #wls = 1e4 / Qext_grid["wavenumber_grid"][()]
             #order = np.argsort(wls)
 
+            self.warning('EXTRACTING DATA ...')
             radius_grids.append( Qext_grid["radius_grid"][()] )
+            self.warning('RADIUS GRID DONE')
             Qexts.append( Qext_grid["Qext"][()] )
+            self.warning('Q EXT DONE')
             wavenumber_grids.append( Qext_grid["wavenumber_grid"][()] )
+            self.warning('DATA EXTRACTED ...')
 
             Qext_grid.close()
+            self.warning(f'FILE {file_path} CLOSED')
             
         return radius_grids, Qexts, wavenumber_grids, paths
 
@@ -293,40 +301,52 @@ class PyMieScattGridExtinctionContribution(Contribution):
         sigma_xsec = np.zeros(shape=(self._nlayers, wngrid.shape[0]))
 
 
-        for idx, s in enumerate(self._species):
-            wn = self._Qext_wn[idx]
-            Rmean = self._mie_particle_mean_radius[idx]
+        for specie_idx, s in enumerate(self._species):
+            wn = self._Qext_wn[specie_idx]
+            Rmean = self._mie_particle_mean_radius[specie_idx]
         
             
             ## GET A LOG DISTRIBUTION OF THE PARTICLE RADIUS
 
             if self._mie_particle_radius_distribution == 'budaj': ## This distribution can be found in Budaj et al. 2015
                 LogRsigma = 0.2 ## since the distribution is fixed in width, this can be set to approx 0.2 for the sampling
-                #radii_log = np.logspace(np.log10(Rmean)+self._Dsampling*LogRsigma, np.log10(Rmean)-self._Dsampling*LogRsigma, self._Nsampling)
                 radii_log = np.linspace(10**(np.log10(Rmean)+self._Dsampling*LogRsigma), 10**(np.log10(Rmean)-self._Dsampling*LogRsigma), self._Nsampling)
                 weights = ((radii_log/Rmean)**6)*np.exp(-6*radii_log/Rmean)
             elif self._mie_particle_radius_distribution == 'deirmendjian': ## This distribution can be found in Deirmendjian 1964 (modified Gamma distribution)
-                LogRsigma = self._mie_particle_std_radius[idx]
-                #radii_log = np.logspace(np.log10(Rmean)+self._Dsampling*LogRsigma, np.log10(Rmean)-self._Dsampling*LogRsigma, self._Nsampling)
+                LogRsigma = self._mie_particle_std_radius[specie_idx]
                 radii_log = np.linspace(10**(np.log10(Rmean)+self._Dsampling*LogRsigma), 10**(np.log10(Rmean)-self._Dsampling*LogRsigma), self._Nsampling)
-                weights = self._mie_particle_paramA[idx]*(radii_log**self._mie_particle_paramB[idx])*np.exp(-self._mie_particle_paramC[idx]*(radii_log**self._mie_particle_paramD[idx]))
+                weights = self._mie_particle_paramA[specie_idx]*(radii_log**self._mie_particle_paramB[specie_idx])*np.exp(-self._mie_particle_paramC[specie_idx]*(radii_log**self._mie_particle_paramD[specie_idx]))
             else: ## This is simply a normal distribution.
-                LogRsigma = self._mie_particle_std_radius[idx]
-                #radii_log = np.logspace(np.log10(Rmean)+self._Dsampling*LogRsigma, np.log10(Rmean)-self._Dsampling*LogRsigma, self._Nsampling)
+                LogRsigma = self._mie_particle_std_radius[specie_idx]
                 radii_log = np.linspace(10**(np.log10(Rmean)+self._Dsampling*LogRsigma), 10**(np.log10(Rmean)-self._Dsampling*LogRsigma), self._Nsampling)
                 weights = stats.norm.pdf(np.log10(radii_log), np.log10(Rmean), LogRsigma)
             Qexts = []
             
-            closest_indices = [np.abs(self._radius_grid[idx] - r).argmin() for r in radii_log]
-            radii_log  = self._radius_grid[idx][closest_indices]
-            #Qexts_array  = self._Qext[closest_indices] * np.power(radii_log,2)
-            Qexts  = self._Qext[idx][closest_indices] * np.power(radii_log[:, np.newaxis], 2)
+            for radius in radii_log:
+                closest_indice = np.abs(self._radius_grid[specie_idx] - radius).argmin()
+                if radius > self._radius_grid[specie_idx][closest_indice]:
+                    radii_neighbor_idx = [closest_indice, closest_indice + 1]
+                else:
+                    radii_neighbor_idx = [closest_indice - 1, closest_indice]
+                    
+                R1 = self._radius_grid[specie_idx][radii_neighbor_idx[0]]
+                R2 = self._radius_grid[specie_idx][radii_neighbor_idx[1]]
+                delta_R = R1 - R2
+                
+                Q1_arr = self._Qext[specie_idx][radii_neighbor_idx[0]]  # shape: (n_wavelengths,)
+                Q2_arr = self._Qext[specie_idx][radii_neighbor_idx[1]]
 
-            #for Qext_indiv, radius_indiv in zip(Qexts_array, radii_log):
-                #Qexts.append(Qext_indiv * np.pow(radius_indiv, 2))
+                a = (Q1_arr - Q2_arr) / delta_R
+                b = Q1_arr - a * R1
+
+                # Interpolate at current log radius
+                Qexts.append(a * radius + b)
+                                
+            
+            Qexts =  np.array(Qexts) * np.power(radii_log[:, np.newaxis] * 1e3, 2)   # As Qext was coomputed with radii in mm the radii here also needs to be in mm not um.
             
             
-            Qext_mean = np.average(np.array(Qexts), axis=0, weights=weights)
+            Qext_mean = np.average(Qexts, axis=0, weights=weights)
             Qext_int = np.interp(wngrid, wn[::-1], Qext_mean, left=0, right=0)
             Qext_int = Qext_int[::-1]
             sigma_mie = np.zeros((len(wngrid)))
@@ -336,14 +356,14 @@ class PyMieScattGridExtinctionContribution(Contribution):
             sigma_mie[Qext_int!=0] = Qext_int[Qext_int!=0]* np.pi * 1e-18
             ## So here sigma_mie is in m2 (nm2 to m2 conversion is 1e-18)
             
-            np.savetxt("/Users/mv277622/Desktop/SpeedClouds/Qext_avg.dat", np.array([wngrid, Qext_int]).T, header='wavenumber (cm-1) Qext (m2)')
 
-            if self._mie_midP[idx] == -1:
+
+            if self._mie_midP[specie_idx] == -1:
                 bottom_pressure = pressure_profile[0]
                 top_pressure = pressure_profile[-1]
             else:
-                bottom_pressure = 10**(np.log10(self._mie_midP[idx]) + self._mie_rangeP[idx]/2)
-                top_pressure = 10**(np.log10(self._mie_midP[idx]) - self._mie_rangeP[idx]/2)
+                bottom_pressure = 10**(np.log10(self._mie_midP[specie_idx]) + self._mie_rangeP[specie_idx]/2)
+                top_pressure = 10**(np.log10(self._mie_midP[specie_idx]) - self._mie_rangeP[specie_idx]/2)
 
             cloud_filter = (pressure_profile <= bottom_pressure) & \
                 (pressure_profile >= top_pressure)
@@ -353,12 +373,12 @@ class PyMieScattGridExtinctionContribution(Contribution):
             ## This line implied that self._mie_particle_mix_ratio is expressed in m-3
             if self._particle_alt_distib == 'exp_decay':
                 ## if we want it with exp decay style Whitten et al. 2008 / Attreya et al. 2005
-                decay = self._particle_alt_decay[idx]
+                decay = self._particle_alt_decay[specie_idx]
                 #mix = self._mie_particle_mix_ratio[idx]*(1-np.exp(decay*(pressure_profile-top_pressure)/(bottom_pressure-top_pressure)))
-                mix = self._mie_particle_mix_ratio[idx]*(press/bottom_pressure)**(- decay)
+                mix = self._mie_particle_mix_ratio[specie_idx]*(press/bottom_pressure)**(- decay)
                 sigma_xsec_int[cloud_filter, :] = sigma_mie[None] * mix[cloud_filter, None]
             else:
-                sigma_xsec_int[cloud_filter, ...] = sigma_mie * self._mie_particle_mix_ratio[idx]
+                sigma_xsec_int[cloud_filter, ...] = sigma_mie * self._mie_particle_mix_ratio[specie_idx]
 
             sigma_xsec += sigma_xsec_int
 
