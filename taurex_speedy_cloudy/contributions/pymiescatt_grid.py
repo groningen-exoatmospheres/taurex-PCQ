@@ -89,10 +89,8 @@ class PyMieScattGridExtinctionContribution(Contribution):
         self._mie_nMedium = mie_nMedium
 
         self._resolution = mie_resolution
-        self.warning('GOING TO GO INTO LOADINT FONCTION')
         self._radius_grid, self._Qext, self._Qext_wn,  _ = self.load_input_files(self._mie_species_path, 
                                                 self._species)
-        self.warning('FILES LOADED')
         
         self.generate_particle_fitting_params()
 
@@ -115,25 +113,18 @@ class PyMieScattGridExtinctionContribution(Contribution):
         radius_grids, Qexts, wavenumber_grids = [], [], []
         for specie in species:  
             file_path = path+'/'+specie+extension
-            self.warning(f'LOADING FILE {file_path} ...')
             Qext_grid = h5py.File(file_path)
-            self.warning(f'FILE {file_path} LOADED')
 
             paths.append(file_path)
             
             #wls = 1e4 / Qext_grid["wavenumber_grid"][()]
             #order = np.argsort(wls)
 
-            self.warning('EXTRACTING DATA ...')
             radius_grids.append( Qext_grid["radius_grid"][()] )
-            self.warning('RADIUS GRID DONE')
             Qexts.append( Qext_grid["Qext"][()] )
-            self.warning('Q EXT DONE')
             wavenumber_grids.append( Qext_grid["wavenumber_grid"][()] )
-            self.warning('DATA EXTRACTED ...')
 
             Qext_grid.close()
-            self.warning(f'FILE {file_path} CLOSED')
             
         return radius_grids, Qexts, wavenumber_grids, paths
 
