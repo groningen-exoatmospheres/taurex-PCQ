@@ -338,9 +338,9 @@ class PyMieScattGridExtinctionContribution(Contribution):
             
             
             Qext_mean = np.average(Qexts, axis=0, weights=weights)
-            Qext_int = np.interp(wngrid, wn[::-1], Qext_mean, left=0, right=0)
-            Qext_int = Qext_int[::-1]
+            Qext_int = np.interp(wngrid, wn[::-1], Qext_mean[::-1], left=0, right=0)            
             sigma_mie = np.zeros((len(wngrid)))
+
             
 
 
