@@ -25,7 +25,6 @@ A list of precomputed `Q_ext` grids for molecules such as Silicates or Titan Tho
   - `budaj` (2015)
   - `deirmendjian` (1964)
 - ✅ **Multiple species and per-species fitting**
-- ✅ **Agregates** Can compute and retrieve whatever combinason of specie as a single opacity source. Example: You can use an agreagate of SiO2 + MgSiO3 + Mg3SiO4 as one specie for your retrieval / model. Aggregate theory is from Akimasa et al. 2014.
 - ✅ **Particle decay with altitude** (`exp_decay` based on Whitten 2008 / Atreya 2005)
 - ✅ **Computes exctinction** using the species optical constant via **Effective Medium Theory (Bohren & Huffman 1983)**
 - ✅ **Multiple fittable parameters** for TauREx retrievals
@@ -71,4 +70,4 @@ model_type = transit
 ---
 ## Limitations
 
-As the `Q_ext` are computed for a range of radii, it is strongly recomended that the `mie_particle_mean_radius` prior does not extend beyond this range. Any radius outside of the range will use the `Q_ext` of the closest radius present in the grid.
+As the `Q_ext` are computed for a range of radii between 1 nm and 30 microns, it is strongly recomended that the `mie_particle_mean_radius` prior does not extend beyond this range. Any radius outside of the range will use the `Q_ext` of the closest radius present in the grid.
