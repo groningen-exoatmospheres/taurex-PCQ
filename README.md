@@ -2,7 +2,7 @@
 
 This plugin provides **a new nethod to inclue aerosols** in [TauREx 3](https://github.com/ucl-exoplanets/TauREx3_public), extending the TauREx-PyMieScatt plugin.  
 It speeds up the inclusion of physically consistent cloud and aerosol opacity modeling by using precomputed extinction efficiency (`Q_ext`) grids generated with [PyMieScatt](https://pymiescatt.readthedocs.io/en/latest/).
-
+The grids details and validation can be found in Voyer & changeat (2026), if you use TauREx-PCQ or the grids please cite this paper. The species already available are Mg2SiO4, MgSiO3 (amorph sol-gel and amorph glass), SiO2 (alpha and amorph), SiO and the Titan tholins. They can be found at: 10.5281/zenodo.17456673 .
 ---
 
 A list of precomputed `Q_ext` grids for molecules such as Silicates or Titan Tholin aerosols are available at: (repo)
