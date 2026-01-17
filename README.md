@@ -2,7 +2,7 @@
 ---
 
 This plugin provides **a new nethod to inclue aerosols** in [TauREx 3](https://github.com/ucl-exoplanets/TauREx3_public), extending the TauREx-PyMieScatt plugin. It significantly speeds up the cloud models by using precomputed extinction efficiency (`Q_ext`) grids. TauREx-PCQ also considerably improves the computation scaling with the number of clouds in the models. The speed-ups for single cloud retrievals are betwwen 1.4 and 2.3. Although, a single-cloud retrieval using Qext grids achieved a speed-up of 1.4, the same retrieval with four clouds became 17 times faster than the corresponding retrieval using direct Mie calculations.
-The grids details and validation can be found in Voyer & Changeat (2026), if you use TauREx-PCQ or the grids please cite this paper. The species already available are Mg2SiO4, MgSiO3 (amorph sol-gel and amorph glass), SiO2 (alpha and amorph), SiO and the Titan tholins. They can be found at: 10.5281/zenodo.17456673 .
+The grids details and validation can be found in Voyer & Changeat (2026), if you use TauREx-PCQ or the grids please cite this paper. The species already available are Mg2SiO4, MgSiO3 (amorph sol-gel and amorph glass), SiO2 (alpha and amorph), SiO and the Titan tholins. They can be found at: [10.5281/zenodo.17456673](https://doi.org/10.5281/zenodo.17456673) .
 
 ---
 
