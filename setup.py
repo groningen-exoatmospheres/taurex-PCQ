@@ -1,18 +1,16 @@
 import setuptools
 from setuptools import find_packages
 from setuptools import setup
-#from numpy.distutils.core import Extension
-#from numpy.distutils import log
 import re, os
 
 packages = find_packages(exclude=('tests', 'doc'))
-provides = ['taurex_speedy_cloudy', ]
+provides = ['taurex_PCQ', ]
 
 install_requires = ['taurex']
 
-entry_points = {'taurex.plugins': 'taurex_speedy_cloudy = taurex_speedy_cloudy'}
+entry_points = {'taurex.plugins': 'taurex_PCQ = taurex_PCQ'}
 
-setup(name='taurex_speedy_cloudy',
+setup(name='taurex_PCQ',
       author="Maël Voyer",
       author_email="tbd",
       license="BSD",
