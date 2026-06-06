@@ -291,6 +291,7 @@ class PyMieScattGridExtinctionContribution(Contribution):
             
             for radius in radii_log:
                 idx = np.searchsorted(self._radius_grid[specie_idx], radius) - 1
+                idx = max(0, min(idx, len(self._radius_grid[specie_idx]) - 2)) #Should not get out of bounds 
                 
                 R1 = self._radius_grid[specie_idx][int(idx)]
                 R2 = self._radius_grid[specie_idx][int(idx)+1]
