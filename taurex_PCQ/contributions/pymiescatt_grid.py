@@ -331,7 +331,7 @@ class PyMieScattGridExtinctionContribution(Contribution):
                 ## if we want it with exp decay style Whitten et al. 2008 / Attreya et al. 2005
                 decay = self._particle_alt_decay[specie_idx]
                 #mix = self._mie_particle_mix_ratio[idx]*(1-np.exp(decay*(pressure_profile-top_pressure)/(bottom_pressure-top_pressure)))
-                mix = self._mie_particle_mix_ratio[specie_idx]*(press/bottom_pressure)**(- decay)
+                mix = self._mie_particle_mix_ratio[specie_idx]*(pressure_profile/bottom_pressure)**(- decay)
                 sigma_xsec_int[cloud_filter, :] = sigma_mie[None] * mix[cloud_filter, None]
             else:
                 sigma_xsec_int[cloud_filter, ...] = sigma_mie * self._mie_particle_mix_ratio[specie_idx]
