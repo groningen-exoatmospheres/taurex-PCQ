@@ -7,6 +7,10 @@ The grids details and validation can be found in Voyer & Changeat (2026), if you
 For any inquiries, please contact: mael.voyer@u-paris.fr
 
 ---
+
+This plugin has now been included in the lastest version of the TauREx mainframe. Grids for new species will continue to be uploaded to the Zenodo.
+
+---
 ** Just try it **   `pip install taurex-pcq`
 
 ---
