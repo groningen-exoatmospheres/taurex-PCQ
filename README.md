@@ -1,6 +1,6 @@
 # Faster clouds for TauREx 3
 ---
-From version 3.4 this plugin is now integrated into the main TauREx framework.
+From TauREx version 3.4 this plugin is now integrated into the main TauREx framework.
 ---
 
 This plugin provides **a new nethod to inclue aerosols** in [TauREx 3](https://github.com/ucl-exoplanets/TauREx3_public), extending the TauREx-PyMieScatt plugin. It significantly speeds up the cloud models by using precomputed extinction efficiency (`Q_ext`) grids. TauREx-PCQ also considerably improves the computation scaling with the number of clouds in the models. The speed-ups for single cloud retrievals are betwwen 1.4 and 2.7. Although, a single-cloud retrieval using Qext grids achieved a speed-up of 1.4, the same retrieval with four clouds became 17 times faster than the corresponding retrieval using direct Mie calculations.
